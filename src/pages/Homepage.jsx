@@ -80,16 +80,26 @@ export default function Homepage() {
               Explore the collection <span aria-hidden="true">↗</span>
             </a>
           </div>
-          <div className="hero-note">
-            <span className="hero-mark" aria-hidden="true">
-              ✳
-            </span>
-            <p>
-              A fresh perspective
-              <br />
-              on everyday shopping.
-            </p>
-            <span className="small-label">CURATED BY CURIOSITY</span>
+          <div className="hero-edit" aria-label="The everyday edit">
+            <span className="hero-edit-label">THE EVERYDAY EDIT / 01</span>
+            <figure className="hero-product">
+              <ProductImage
+                src="https://static.noroff.dev/api/online-shop/3-headphones-beats.jpg"
+                alt="Gold over-ear headphones"
+                width="320"
+                height="360"
+              />
+              <figcaption>TURN IT UP.</figcaption>
+            </figure>
+            <figure className="hero-product">
+              <ProductImage
+                src="https://static.noroff.dev/api/online-shop/2-shoes-pink.jpg"
+                alt="Pink everyday sneakers"
+                width="260"
+                height="300"
+              />
+              <figcaption>STEP OUT.</figcaption>
+            </figure>
           </div>
         </div>
       </section>
