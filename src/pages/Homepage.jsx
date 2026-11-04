@@ -1,177 +1,273 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { getCatalog, unitPrice } from "../shop";
+import ProductImage from "../components/ProductImage";
+import Price from "../components/Price";
 
-const Homepage = () => {
+const PAGE_SIZE = 12;
+export default function Homepage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [sortOption, setSortOption] = useState("default"); // Track selected sort option
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 21;
-
+  const [sort, setSort] = useState("default");
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("https://v2.api.noroff.dev/online-shop");
-        const data = await response.json();
-        setProducts(data.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
+    const controller = new AbortController();
+    let active = true;
+    setLoading(true);
+    setError("");
+    getCatalog(controller.signal)
+      .then((items) => {
+        if (active) setProducts(items);
+      })
+      .catch((err) => {
+        if (active && err.name !== "AbortError") setError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      controller.abort();
     };
-
-    fetchProducts();
-  }, []);
-
-  // Filter products based on the search query
-  const filteredProducts = products
-    .filter((product) =>
-      product.title?.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortOption === "price-asc") {
-        return a.discountedPrice - b.discountedPrice;
-      } else if (sortOption === "price-desc") {
-        return b.discountedPrice - a.discountedPrice;
-      } else if (sortOption === "rating-desc") {
-        return (b.rating || 0) - (a.rating || 0);
-      } else if (sortOption === "rating-asc") {
-        return (a.rating || 0) - (b.rating || 0);
-      } else if (sortOption === "discount") {
-        const discountA = a.price - a.discountedPrice;
-        const discountB = b.price - b.discountedPrice;
-        return discountB - discountA; // Sort by largest discount first
+  }, [retry]);
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const results = products.filter((product) =>
+      [
+        product.title || "",
+        product.description || "",
+        ...(product.tags || []),
+      ].some((text) => String(text).toLowerCase().includes(query)),
+    );
+    return [...results].sort((a, b) => {
+      const priceA = unitPrice(a),
+        priceB = unitPrice(b);
+      if (sort.startsWith("price")) {
+        if (priceA === null) return priceB === null ? 0 : 1;
+        if (priceB === null) return -1;
+        return sort === "price-asc" ? priceA - priceB : priceB - priceA;
       }
-      return 0; // Default order (no sorting)
+      if (sort === "rating-desc") return (b.rating || 0) - (a.rating || 0);
+      if (sort === "rating-asc") return (a.rating || 0) - (b.rating || 0);
+      if (sort === "discount")
+        return (
+          Math.max(0, (b.price || 0) - (priceB ?? b.price)) -
+          Math.max(0, (a.price || 0) - (priceA ?? a.price))
+        );
+      return 0;
     });
-
-  // Paginate the products to display only 21 per page
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const currentProducts = filteredProducts.slice(0, indexOfLastProduct);
-
-  const loadMore = () => {
-    setCurrentPage(currentPage + 1);
-  };
-
-  const showLess = () => {
-    setCurrentPage(currentPage - 1);
-  };
-
-  if (loading) return <p>Loading products...</p>;
-
+  }, [products, search, sort]);
   return (
-    <div>
-      <h1 className="slogan">Discover Your Next Favorite Product at ShopSphere</h1>
-
-      {/* Search and Sort Container */}
-      <div className="search-sort-container">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="search-bar-input"
-        />
-        <select
-          className="sort-dropdown"
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-        >
-          <option value="default">Sort By</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-          <option value="rating-desc">Highest Rating</option>
-          <option value="rating-asc">Lowest Rating</option>
-          <option value="discount">Largest Discount</option>
-        </select>
-      </div>
-
-      {/* Product List */}
-      <div className="product-list">
-        {currentProducts.map((product) => (
-          <div key={product.id} className="product-card">
-            {/* Show discount badge if discounted */}
-            {product.discountedPrice < product.price && (
-              <span className="discount-badge">
-                {`-${Math.round(
-                  ((product.price - product.discountedPrice) / product.price) * 100
-                )}%`}
-              </span>
-            )}
-
-            <img
-              src={product.image?.url}
-              alt={product.title}
-              className="product-image"
-            />
-            <h3>{product.title}</h3>
+    <>
+      <section className="shop-hero">
+        <div className="container hero-content">
+          <div>
+            <p className="eyebrow">GOOD FINDS. EVERY DAY.</p>
+            <h1>
+              Your next favorite
+              <br />
+              <span>is waiting.</span>
+            </h1>
             <p>
-              {product.discountedPrice < product.price ? (
-                <>
-                  <span className="original-price">${product.price?.toFixed(2)}</span>{" "}
-                  <span className="discounted-price">
-                    ${product.discountedPrice?.toFixed(2)}
-                  </span>
-                </>
-              ) : (
-                <span>${product.price?.toFixed(2)}</span>
-              )}
+              Small upgrades, thoughtful gifts, and everyday essentials.
+              <br className="desktop-break" /> Find a little something that
+              feels like you.
             </p>
-            <p className="product-rating">
-              Rating: ⭐ {product.rating ? product.rating.toFixed(1) : "0"}
-            </p>
-            <Link to={`/product/${product.id}`} className="view-product-button">
-              View Product
-            </Link>
+            <a className="button" href="#products">
+              Explore the collection <span aria-hidden="true">↗</span>
+            </a>
           </div>
-        ))}
-      </div>
-
-      {/* Pagination Buttons */}
-      {filteredProducts.length > currentPage * productsPerPage && (
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <button onClick={loadMore} className="load-more-button">
-            Load More
-          </button>
+          <div className="hero-edit" aria-label="The everyday edit">
+            <span className="hero-edit-label">THE EVERYDAY EDIT / 01</span>
+            <figure className="hero-product">
+              <ProductImage
+                src="https://static.noroff.dev/api/online-shop/3-headphones-beats.jpg"
+                alt="Gold over-ear headphones"
+                width="320"
+                height="360"
+              />
+              <figcaption>TURN IT UP.</figcaption>
+            </figure>
+            <figure className="hero-product">
+              <ProductImage
+                src="https://static.noroff.dev/api/online-shop/2-shoes-pink.jpg"
+                alt="Pink everyday sneakers"
+                width="260"
+                height="300"
+              />
+              <figcaption>STEP OUT.</figcaption>
+            </figure>
+          </div>
         </div>
-      )}
-
-      {currentPage > 1 && (
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <button onClick={showLess} className="show-less-button">
-            Show Less
-          </button>
+      </section>
+      <section
+        id="products"
+        className="container page-section"
+        aria-labelledby="collection-title"
+      >
+        <div className="collection-heading">
+          <div>
+            <p className="eyebrow">THE COLLECTION</p>
+            <h2 id="collection-title">Find your kind of good.</h2>
+          </div>
+          <p className="muted" role="status">
+            {!loading && !error
+              ? `${filtered.length} ${filtered.length === 1 ? "product" : "products"}`
+              : ""}
+          </p>
         </div>
-      )}
-    </div>
+        <div className="search-sort-container">
+          <div className="search-field">
+            <label htmlFor="product-search">Search the collection</label>
+            <input
+              type="search"
+              id="product-search"
+              placeholder="Try headphones, beauty, or a gift…"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setVisible(PAGE_SIZE);
+              }}
+            />
+          </div>
+          <div>
+            <label htmlFor="product-sort">Sort by</label>
+            <select
+              id="product-sort"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value);
+                setVisible(PAGE_SIZE);
+              }}
+            >
+              <option value="default">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating-desc">Highest Rating</option>
+              <option value="rating-asc">Lowest Rating</option>
+              <option value="discount">Largest Discount</option>
+            </select>
+          </div>
+        </div>
+        {loading && (
+          <p className="empty-state" role="status">
+            Loading products...
+          </p>
+        )}
+        {error && (
+          <div className="notice error" role="alert">
+            <p>{error}</p>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => setRetry((n) => n + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {!loading && !error && (
+          <>
+            <div className="product-list">
+              {filtered.slice(0, visible).map((product) => {
+                const price = unitPrice(product);
+                const discount =
+                  price !== null && product.price > price
+                    ? Math.round(
+                        ((product.price - price) / product.price) * 100,
+                      )
+                    : 0;
+                return (
+                  <article key={product.id} className="product-card">
+                    <Link
+                      to={`/product/${product.id}`}
+                      className="product-image-link"
+                      aria-label={`View ${product.title}`}
+                    >
+                      <ProductImage
+                        src={product.image?.url}
+                        alt={product.image?.alt || product.title}
+                        className="product-image"
+                        loading="lazy"
+                        width="500"
+                        height="450"
+                      />
+                      {discount > 0 && (
+                        <span className="discount-badge">−{discount}%</span>
+                      )}
+                    </Link>
+                    <div className="product-card-body">
+                      <p className="product-category">
+                        {product.tags?.slice(0, 2).join(" / ") ||
+                          "EVERYDAY FINDS"}
+                      </p>
+                      <h3>
+                        <Link to={`/product/${product.id}`}>
+                          {product.title}
+                        </Link>
+                      </h3>
+                      <p className="product-rating">
+                        {product.rating > 0
+                          ? `★ ${product.rating.toFixed(1)}`
+                          : "No ratings yet"}
+                      </p>
+                      <div className="product-card-bottom">
+                        <Price product={product} />
+                        <Link
+                          className="product-arrow"
+                          aria-label={`Details for ${product.title}`}
+                          to={`/product/${product.id}`}
+                        >
+                          ↗
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+            {filtered.length === 0 && (
+              <div className="empty-state">
+                <h3>No products found</h3>
+                <p>Try another search or explore the full collection.</p>
+                {search && (
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={() => {
+                      setSearch("");
+                      setVisible(PAGE_SIZE);
+                    }}
+                  >
+                    Clear search
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="pagination">
+              {visible < filtered.length && (
+                <button
+                  className="button"
+                  onClick={() => setVisible((count) => count + PAGE_SIZE)}
+                >
+                  Load More
+                </button>
+              )}
+              {visible > PAGE_SIZE && (
+                <button
+                  className="button secondary"
+                  onClick={() => setVisible(PAGE_SIZE)}
+                >
+                  Show Less
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </section>
+    </>
   );
-};
-
-export default Homepage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}

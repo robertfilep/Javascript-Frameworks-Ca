@@ -1,39 +1,26 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import Header from "../components/Header"; 
-
-const Layout = ({ children }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Function to toggle the menu
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
-  };
-
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import Header from "./Header";
+import Footer from "./Footer";
+export default function Layout({ children }) {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (
+      typeof window.scrollTo === "function" &&
+      process.env.NODE_ENV !== "test"
+    )
+      window.scrollTo(0, 0);
+  }, [pathname]);
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* Header included here for all pages, passing the menu state */}
-      <Header menuOpen={menuOpen} toggleMenu={toggleMenu} />
-
-      {/* Main Content */}
-      <main style={{ flexGrow: 1, padding: "20px" }}>{children}</main>
-
-      {/* Footer */}
-      <footer>
-  <p>© 2024 ShopSphere</p>
-  <div className="footer-link">
-    <Link to="/contact">Contact Us</Link>
-  </div>
-</footer>
-
+    <div className="layout-container">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <Header />
+      <main id="main-content" tabIndex="-1">
+        {children}
+      </main>
+      <Footer />
     </div>
   );
-};
-
-export default Layout;
-
-
-
-
-
-
+}

@@ -1,125 +1,66 @@
-# ShopSphere - Robert Filep JavaScript Frameworks CA
+# ShopSphere
 
-## Overview
-
-ShopSphere is an e-commerce platform built using React, aimed at providing a seamless shopping experience. It integrates several features, including product listing, cart functionality, checkout process, and a contact page. The website fetches product data from an external API and allows users to search and filter products, add items to the cart, and complete their purchases.
+A responsive portfolio storefront by Robert Filep, built with React and the Noroff Online Shop API. Browse products, search by name, description or tags, explore customer reviews and try a demo checkout.
 
 ## Features
 
-- **Home Page**: Displays a list of products, allowing users to browse through and search for items.
-- **Product Page**: Shows detailed information about a product when clicked.
-- **Cart**: Users can add products to the cart, view the items, change quantities, and proceed to checkout.
-- **Checkout**: A form to enter billing information and complete the order.
-- **Contact Page**: A simple form to get in touch with customer service.
+- Product catalog with search, price/rating/discount sorting and incremental display.
+- Product details, original and discounted prices, API-provided reviews and local image fallbacks.
+- Shared cart state with immediate header updates, validated quantities and local persistence.
+- Totals calculated in integer cents to avoid floating-point rounding errors.
+- Demo checkout with a receipt that remains available when the confirmation page is refreshed.
+- Responsive desktop and mobile navigation, keyboard focus styles and reduced-motion support.
+- Contact form with accessible validation and clear demo feedback.
+- Loading, error, retry, empty and not-found states.
 
-## Technologies Used
+## Demo behavior
 
-- **React**: A JavaScript library for building user interfaces.
-- **React Router**: A library for handling routing and navigation.
-- **LocalStorage**: Used to persist the cart items across page reloads.
-- **CSS**: Custom CSS styles for the layout and design.
-- **External API**: Fetches product data from the Noroff API ([https://v2.api.noroff.dev/online-shop]).
+This is a portfolio project. Checkout does not collect card details, take payments, create an order on a server or arrange delivery. Receipts contain only product information and are stored in the current browser session. The contact form validates input but does not deliver messages. Reviews are read from the product API; the app does not publish new reviews.
 
-## Folder Structure
+The cart is saved in localStorage under `cart`. If browser storage is unavailable, it remains usable in memory for the current tab. No authentication is required.
 
-```
-/public
-  /index.html
-/src
-  /components
-    - Header.jsx
-    - Layout.jsx
-    - Footer.jsx
-  /pages
-    - Homepage.jsx
-    - ProductPage.jsx
-    - CartPage.jsx
-    - CheckoutSuccessPage.jsx
-    - ContactPage.jsx
-  /App.js
-  /App.css
-  /index.js
-/assets
-  - logo.png
-/data
-  - products.json
+## Technologies
+
+React 18, React Router 7, CSS, the Fetch API, localStorage and sessionStorage. Tests use Jest and React Testing Library through react-scripts.
+
+Product data: https://v2.api.noroff.dev/online-shop
+
+## Local development
+
+Use Node.js 20 or newer, as required by React Router 7.
+
+```sh
+npm ci
+npm start
 ```
 
-## Setup Instructions
+The development server normally opens at http://localhost:3000. To use another port on macOS or Linux:
 
-To get the project up and running, follow these steps:
+```sh
+PORT=3001 npm start
+```
 
-1. **Clone the repository**:
+## Validation
 
-   ```bash
-   git clone https://github.com/robfil50219/Javascript-Frameworks-Ca.git
-   cd Javascript-Frameworks-Ca
-   ```
+```sh
+CI=true npm test -- --watchAll=false --runInBand
+npm run build
+```
 
-2. **Install dependencies**:
+Tests cover pricing, corrupted cart recovery, duplicate products, quantity limits, cart synchronization, demo checkout, receipt recovery, catalog pagination, search and sorting, API errors and retries, navigation and contact validation.
 
-   ```bash
-   npm install
-   ```
+The Jest module mappings in package.json point to the CommonJS builds shipped by React Router 7 so the existing react-scripts test runner can resolve its package exports.
 
-3. **Start the development server**:
+## Deployment
 
-   ```bash
-   npm start
-   ```
+The production files are generated in `build`. The included Netlify configuration builds the app and routes direct requests for product, cart and other application pages back to index.html.
 
-   The application should be available at `http://localhost:3000`.
+## Main files
 
-## Development
+- `src/shop.js`: API access, pricing, catalog pagination and cart normalization.
+- `src/CartContext.jsx`: shared cart state and persistence.
+- `src/components`: navigation, layout, images and price display.
+- `src/pages`: catalog, product, cart, confirmation and contact screens.
+- `src/tests`: behavior and regression tests.
 
-This project is built using React and React Router. All the components are designed to be modular and reusable. Here's a brief description of the key components:
-
-- **Header.jsx**:
-  Displays the logo, cart icon, and navigation menu. Handles routing using React Router.
-
-- **Layout.jsx**:
-  A wrapper component that includes the Header, Footer, and dynamically loads the main content (children) of each page.
-
-- **CartPage.jsx/CheckoutPage**:
-  -Displays the user's cart, allowing them to change item quantities, remove products, and proceed to checkout.
-  -A simple form that allows users to enter billing information and place an order.
-
-- **CheckoutSuccessPage.jsx**:
-  Displays a success message after an order is placed, confirming the successful transaction.
-
-- **Homepage.jsx**:
-  Displays a list of products, allowing users to filter and view product details.
-
-- **ProductPage.jsx**:
-  Displays detailed information for each product, including an image, price, and description.
-
-- **ContactPage.jsx**:
-  A contact form allowing users to send a message to the customer support team.
-
-## Future Enhancements
-
-- **User Authentication**: Implement login and registration functionality for users to track their orders.
-- **Payment Gateway Integration**: Add payment gateway support to complete transactions securely.
-- **Order History**: Allow users to view past orders after logging in.
-- **Advanced Search Filters**: Add more filters for sorting products by price, category, etc.
-- **Dark Mode**: Implement dark mode for better accessibility.
-
-## Contributing
-
-We welcome contributions to improve the ShopSphere platform. Please fork the repository and submit a pull request for any enhancements or bug fixes.
-
-To contribute:
-
-1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-ShopSphere - 2024\
-Created by Robert Filep
+Created by Robert Filep.
