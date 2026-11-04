@@ -1,57 +1,59 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { normalizeCart, totalCents, money, lineTotalCents } from "../shop";
+import ProductImage from "../components/ProductImage";
 
-const CheckoutSuccessPage = () => {
-  const location = useLocation();
-  const orderDetails = location.state?.orderData || null;
-
-  if (!orderDetails) {
-    return (
-      <div style={{ padding: "20px" }}>
-        <h1>Order not found!</h1>
-        <p>Sorry, something went wrong. Please try again.</p>
-      </div>
-    );
+function savedOrder() {
+  try {
+    return JSON.parse(sessionStorage.getItem("shopsphere-demo-order"));
+  } catch {
+    return null;
   }
-
+}
+export default function CheckoutSuccessPage() {
+  const location = useLocation();
+  const order = location.state?.orderData || savedOrder();
+  const items = order?.demo === true ? normalizeCart(order.cartItems) : [];
+  if (!items.length)
+    return (
+      <section className="container page-section empty-state">
+        <h1>No demo order to show</h1>
+        <p>Your next good find is still waiting.</p>
+        <Link className="button" to="/">
+          Continue Shopping
+        </Link>
+      </section>
+    );
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Thank you for your order, {orderDetails.customerName}!</h1>
-      <p>Your order has been placed successfully.</p>
-      
-      <h3>Order Details:</h3>
-      <div>
-        {orderDetails.cartItems.map((item) => (
-          <div key={item.id} style={{ marginBottom: "10px" }}>
-            <img
-              src={item.image?.url || "https://via.placeholder.com/100"}
-              alt={item.title}
-              style={{ width: "50px", height: "auto", marginRight: "10px" }}
-            />
-            <span>{item.title} x {item.quantity} - ${item.discountedPrice.toFixed(2)}</span>
+    <section className="container page-section receipt">
+      <div className="confirmation-icon" aria-hidden="true">
+        ✓
+      </div>
+      <p className="eyebrow">ALL SET</p>
+      <h1>Your demo order is complete.</h1>
+      <p className="muted">
+        Thanks for exploring ShopSphere. No payment was taken and nothing will
+        be shipped.
+      </p>
+      <div className="receipt-items">
+        {items.map((item) => (
+          <div className="receipt-item" key={item.id}>
+            <ProductImage src={item.image?.url} alt={item.title} />
+            <div>
+              <strong>{item.title}</strong>
+              <p className="muted">Quantity: {item.quantity}</p>
+            </div>
+            <strong>{money(lineTotalCents(item) / 100)}</strong>
           </div>
         ))}
       </div>
-      <h3>Total Amount: ${orderDetails.totalAmount}</h3>
-
-      <div style={{ marginTop: "20px", textAlign: "center" }}>
-        <Link to="/" style={{ textDecoration: "none" }}>
-          <button
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#00A0A0",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-            }}
-          >
-            Continue Shopping
-          </button>
-        </Link>
+      <div className="summary-row summary-total">
+        <span>Total</span>
+        <strong>{money(totalCents(items) / 100)}</strong>
       </div>
-    </div>
+      <Link className="button" to="/">
+        Continue Shopping
+      </Link>
+    </section>
   );
-};
-
-export default CheckoutSuccessPage;
+}

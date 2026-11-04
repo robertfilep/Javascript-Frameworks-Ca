@@ -1,11 +1,16 @@
 import React from "react";
-
-const Footer = () => {
+import { Link } from "react-router-dom";
+export default function Footer() {
   return (
     <footer>
-      <p>&copy; {new Date().getFullYear()} ShopSphere</p>
+      <div className="container footer-content">
+        <div>
+          <strong>ShopSphere</strong>
+          <p>Everyday finds. A little more you.</p>
+        </div>
+        <Link to="/contact">Contact us</Link>
+        <p>© {new Date().getFullYear()} ShopSphere · Portfolio demo</p>
+      </div>
     </footer>
   );
-};
-
-export default Footer;
+}

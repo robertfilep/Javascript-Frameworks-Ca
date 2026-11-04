@@ -1,152 +1,98 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useCart } from "../CartContext";
 
-const Header = () => {
-  const [cartCount, setCartCount] = useState(0);
+export default function Header() {
+  const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  // Load cart items from localStorage and update cart count
+  const headerRef = useRef(null);
+  const toggleRef = useRef(null);
+  const location = useLocation();
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
-    const totalCartCount = savedCart.reduce((count, item) => count + item.quantity, 0);
-    setCartCount(totalCartCount);
-  }, []);
-
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
-  };
-
-  // Close the menu when clicked outside
+    setMenuOpen(false);
+  }, [location]);
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    const closeOutside = (event) => {
+      if (!headerRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    const escape = (event) => {
+      if (event.key === "Escape" && menuOpen) {
         setMenuOpen(false);
+        toggleRef.current?.focus();
       }
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", escape);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", escape);
     };
-  }, []);
-
+  }, [menuOpen]);
   return (
-    <header className="header">
-      <div className="header-content">
-        {/* Logo */}
-        <Link to="/" className="logo-link">
+    <header className="header" ref={headerRef}>
+      <div className="container header-content">
+        <Link to="/" className="logo-link" aria-label="ShopSphere home">
           <img
             src={`${process.env.PUBLIC_URL}/Shopsphere-logo2.png`}
-            alt="ShopSphere Logo"
+            alt="ShopSphere"
             className="logo"
           />
         </Link>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-          {/* Cart Icon */}
+        <nav className="desktop-nav" aria-label="Main navigation">
+          <NavLink to="/" end>
+            Shop
+          </NavLink>
+          <NavLink to="/contact">Contact</NavLink>
+        </nav>
+        <div className="header-actions">
           <Link
+            className="cart-link"
             to="/cart"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              textDecoration: "none",
-              color: "white",
-              position: "relative",
-            }}
+            aria-label={`Cart, ${count} ${count === 1 ? "item" : "items"}`}
           >
-            <span style={{ fontSize: "24px" }}>🛒</span>
-            <span
-              style={{
-                backgroundColor: "rgba(255, 0, 0, 0.6)",
-                borderRadius: "50%",
-                color: "white",
-                padding: "3px 6px",
-                fontSize: "12px",
-                position: "absolute",
-                top: "-5px",
-                right: "-10px",
-                opacity: cartCount === 0 ? 0.5 : 1, 
-              }}
+            <svg
+              aria-hidden="true"
+              width="23"
+              height="23"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
             >
-              {cartCount}
+              <path d="M3 3h2l2.5 12h11l2-8H6" />
+              <circle cx="9" cy="20" r="1" />
+              <circle cx="18" cy="20" r="1" />
+            </svg>
+            <span>Cart</span>
+            <span className="cart-count" aria-hidden="true">
+              {count}
             </span>
           </Link>
-
-          {/* Hamburger Menu */}
-          <div onClick={toggleMenu} style={{ cursor: "pointer", fontSize: "24px", color: "white" }}>
-            ☰
-          </div>
+          <button
+            ref={toggleRef}
+            type="button"
+            className="menu-toggle"
+            aria-label="Toggle navigation"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
         </div>
-      </div>
-
-      {/* Mobile menu */}
-      {menuOpen && (
         <nav
-          ref={menuRef}
-          style={{
-            backgroundColor: "#0F4452",
-            padding: "10px",
-            marginTop: "10px",
-            borderRadius: "5px",
-            position: "absolute",
-            top: "100%",
-            right: "0",
-            width: "200px",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            zIndex: "1000",
-          }}
+          id="mobile-nav"
+          className="mobile-nav"
+          aria-label="Mobile navigation"
+          hidden={!menuOpen}
         >
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            <li style={{ marginBottom: "10px" }}>
-              <Link to="/" style={{ color: "white", textDecoration: "none" }}>
-                Home
-              </Link>
-            </li>
-            <li style={{ marginBottom: "10px" }}>
-              <Link to="/cart" style={{ color: "white", textDecoration: "none" }}>
-                Cart
-              </Link>
-            </li>
-            <li>
-              <Link to="/contact" style={{ color: "white", textDecoration: "none" }}>
-                Contact
-              </Link>
-            </li>
-          </ul>
+          <NavLink to="/" end>
+            Shop
+          </NavLink>
+          <NavLink to="/cart">Cart</NavLink>
+          <NavLink to="/contact">Contact</NavLink>
         </nav>
-      )}
+      </div>
     </header>
   );
-};
-
-export default Header;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
